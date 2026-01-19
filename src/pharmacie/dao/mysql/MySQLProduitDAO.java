@@ -98,13 +98,70 @@ public class MySQLProduitDAO extends AbstractMySQLDAO implements ProduitDAO {
 
     @Override
     public void delete(Long id) {
-        String sql = "DELETE FROM produit WHERE id = ?";
-        try (Connection conn = getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, id);
-            stmt.executeUpdate();
+        Connection conn = null;
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. Check current stock
+            String checkSql = "SELECT stock_actuel, nom FROM produit WHERE id = ?";
+            String productName = "";
+            int stock = -1;
+            try (PreparedStatement pstmt = conn.prepareStatement(checkSql)) {
+                pstmt.setLong(1, id);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        stock = rs.getInt("stock_actuel");
+                        productName = rs.getString("nom");
+                    }
+                }
+            }
+
+            if (stock > 0) {
+                throw new SQLException("Impossible de supprimer '" + productName + "' car il reste " + stock
+                        + " unités en stock. Veuillez vider le stock d'abord.");
+            }
+
+            // 2. Cascade delete from history
+            String delLinesVente = "DELETE FROM ligne_vente WHERE produit_id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(delLinesVente)) {
+                pstmt.setLong(1, id);
+                pstmt.executeUpdate();
+            }
+
+            String delLinesCmd = "DELETE FROM ligne_commande WHERE produit_id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(delLinesCmd)) {
+                pstmt.setLong(1, id);
+                pstmt.executeUpdate();
+            }
+
+            // 3. Delete the product itself
+            String delSql = "DELETE FROM produit WHERE id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(delSql)) {
+                pstmt.setLong(1, id);
+                pstmt.executeUpdate();
+            }
+
+            conn.commit();
         } catch (SQLException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
             e.printStackTrace();
+            throw new RuntimeException(e.getMessage(), e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 

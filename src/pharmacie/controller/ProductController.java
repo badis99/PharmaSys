@@ -39,13 +39,32 @@ public class ProductController {
             showAlert("Avertissement", "Sélectionnez un produit.");
             return;
         }
-        try {
-            stockService.deleteProduit(p.getId());
-            loadData(view.getTable());
-            showAlert("Succès", "Produit supprimé.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Erreur", "Impossible de supprimer (Probablement lié à des ventes/commandes).");
+
+        javafx.scene.control.Alert confirm = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirmation de suppression");
+        confirm.setHeaderText("Supprimer le produit : " + p.getNom() + " ?");
+        confirm.setContentText(
+                "Attention: Cette action est irréversible et peut échouer si le produit est lié à des ventes ou commandes.");
+
+        if (confirm.showAndWait().get() == javafx.scene.control.ButtonType.OK) {
+            try {
+                stockService.deleteProduit(p.getId());
+                loadData(view.getTable());
+                showAlert("Succès", "Produit supprimé ainsi que son historique.");
+            } catch (Exception e) {
+                String msg = e.getMessage();
+                // Check if it's our specific stock error or a generic constraint error
+                if (msg != null && msg.contains("unités en stock")) {
+                    showAlert("Suppression refusée", msg);
+                } else if (msg != null && (msg.contains("constraint") || msg.contains("foreign key"))) {
+                    showAlert("Erreur de Database",
+                            "Impossible de supprimer ce produit. " + msg);
+                } else {
+                    e.printStackTrace();
+                    showAlert("Erreur Inattendue", "Détail : " + (msg != null ? msg : e.toString()));
+                }
+            }
         }
     }
 

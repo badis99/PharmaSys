@@ -25,9 +25,11 @@ public class ReportView {
     private BorderPane layout;
     private ReportService reportService;
     private PieChart stockChart;
-    private BarChart<String, Number> supplierChart;
+    private BarChart<String, Number> supplierChart; // Volume
+    private BarChart<String, Number> performanceChart; // Scores
     private Label totalRevenueLabel;
     private Label totalSalesLabel;
+    private Label totalExpenditureLabel;
 
     public ReportView() {
         this.reportService = new ReportService();
@@ -38,73 +40,99 @@ public class ReportView {
     private void createView() {
         layout = new BorderPane();
         layout.setPadding(new Insets(20));
+        layout.setStyle("-fx-background-color: #f4f4f4;");
 
-        // Header
-        HBox header = new HBox();
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setPadding(new Insets(0, 0, 20, 0));
+        // --- Header ---
+        Label title = new Label("Tableau de Bord Analytique");
+        title.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
-        Label title = new Label("Tableau de Bord - Rapports");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
-
-        Button refreshBtn = new Button("Actualiser");
-        refreshBtn.setStyle("-fx-background-color: #5bc0de; -fx-text-fill: white;");
+        Button refreshBtn = new Button("Actualiser les données");
+        refreshBtn.setStyle(
+                "-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;");
         refreshBtn.setOnAction(e -> refresh());
 
         BorderPane headerPane = new BorderPane();
         headerPane.setLeft(title);
         headerPane.setRight(refreshBtn);
+        headerPane.setPadding(new Insets(0, 0, 30, 0));
         layout.setTop(headerPane);
 
-        // Content
-        GridPane grid = new GridPane();
-        grid.setHgap(20);
-        grid.setVgap(20);
-        grid.setAlignment(Pos.CENTER);
+        // --- Main Content ---
+        VBox mainContent = new VBox(30);
+        mainContent.setAlignment(Pos.TOP_CENTER);
+        mainContent.setPadding(new Insets(10));
 
-        // 1. Revenue Cards (Row 0, Col 0-1)
-        HBox cards = new HBox(20);
-        cards.setAlignment(Pos.CENTER);
+        // 1. Top Section: Key Performance Indicators (Cards)
+        mainContent.getChildren().add(createRevenueCards());
 
-        VBox revenueCard = createCard("Chiffre d'Affaires Total", "0.00 €");
-        totalRevenueLabel = (Label) revenueCard.getChildren().get(1);
+        // 2. Middle Section: Stock and Supplier Charts
+        GridPane chartsGrid = new GridPane();
+        chartsGrid.setHgap(30);
+        chartsGrid.setVgap(30);
+        chartsGrid.setAlignment(Pos.CENTER);
 
-        VBox salesCard = createCard("Nombre de Ventes", "0");
-        totalSalesLabel = (Label) salesCard.getChildren().get(1);
+        // Stock Section (Left)
+        VBox stockBox = new VBox(15);
+        stockBox.setStyle(
+                "-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);");
+        stockBox.getChildren().add(createStockChart());
+        chartsGrid.add(stockBox, 0, 0);
 
-        cards.getChildren().addAll(revenueCard, salesCard);
+        // Supplier Section (Right)
+        VBox supplierBox = new VBox(15);
+        supplierBox.setStyle(
+                "-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);");
+        supplierBox.getChildren().add(createSupplierCharts());
+        chartsGrid.add(supplierBox, 1, 0);
 
-        grid.add(cards, 0, 0, 2, 1);
+        mainContent.getChildren().add(chartsGrid);
 
-        // 2. Stock Chart (Row 1, Col 0)
-        stockChart = new PieChart();
-        stockChart.setTitle("État du Stock");
-        grid.add(stockChart, 0, 1);
-
-        // 3. Supplier Chart (Row 1, Col 1)
-        grid.add(createSupplierPerformanceChart(), 1, 1);
-
-        ScrollPane scroll = new ScrollPane(grid);
+        ScrollPane scroll = new ScrollPane(mainContent);
         scroll.setFitToWidth(true);
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
         layout.setCenter(scroll);
     }
 
-    private VBox createCard(String title, String initialValue) {
-        VBox card = new VBox(10);
-        card.setPadding(new Insets(20));
+    private VBox createCard(String title, String initialValue, String color) {
+        VBox card = new VBox(5);
+        card.setPadding(new Insets(25));
         card.setStyle(
-                "-fx-background-color: white; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0); -fx-background-radius: 5;");
+                "-fx-background-color: white; -fx-border-color: " + color + "; -fx-border-width: 0 0 5 0; " +
+                        "-fx-background-radius: 5; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);");
         card.setAlignment(Pos.CENTER);
-        card.setPrefWidth(200);
+        card.setMinWidth(280);
 
         Label titleLbl = new Label(title);
-        titleLbl.setStyle("-fx-text-fill: #777; -fx-font-size: 14px;");
+        titleLbl.setStyle("-fx-text-fill: #95a5a6; -fx-font-size: 15px; -fx-font-weight: bold;");
 
         Label valueLbl = new Label(initialValue);
-        valueLbl.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #333;");
+        valueLbl.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
         card.getChildren().addAll(titleLbl, valueLbl);
         return card;
+    }
+
+    private Node createRevenueCards() {
+        HBox cards = new HBox(25);
+        cards.setAlignment(Pos.CENTER);
+
+        VBox revenueCard = createCard("CHIFFRE D'AFFAIRES", "0.00 €", "#2ecc71");
+        totalRevenueLabel = (Label) revenueCard.getChildren().get(1);
+
+        VBox salesCard = createCard("NOMBRE DE VENTES", "0", "#3498db");
+        totalSalesLabel = (Label) salesCard.getChildren().get(1);
+
+        VBox expenditureCard = createCard("DÉPENSES TOTALES", "0.00 €", "#e74c3c");
+        totalExpenditureLabel = (Label) expenditureCard.getChildren().get(1);
+
+        cards.getChildren().addAll(revenueCard, salesCard, expenditureCard);
+        return cards;
+    }
+
+    private Node createStockChart() {
+        stockChart = new PieChart();
+        stockChart.setTitle("État du Stock");
+        return stockChart;
     }
 
     public void refresh() {
@@ -143,49 +171,72 @@ public class ReportView {
         }
 
         // Expenditure Data (for chart or cards if added)
-        // We will pass this to the chart method via a class field or logic update if we
-        // want real-time update.
-        // For simplicity, let's update chart directly here or ensure chart method pulls
-        // fresh data.
-        // Actually, createSupplierPerformanceChart pulls from DAO directly currently.
-        // Let's change it to pull from reportService.
-        updateSupplierChart();
-    }
-
-    // Extracted method to update chart data
-    private void updateSupplierChart() {
-        if (supplierChart == null)
-            return;
-
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName("Volume d'Achats (€)");
-
         Map<String, Object> expData = reportService.getReportData("EXPENDITURE");
-        if (expData.containsKey("supplierBreakdown")) {
-            @SuppressWarnings("unchecked")
-            Map<String, BigDecimal> breakdown = (Map<String, BigDecimal>) expData.get("supplierBreakdown");
-            for (Map.Entry<String, BigDecimal> entry : breakdown.entrySet()) {
-                series.getData().add(new XYChart.Data<>(entry.getKey(), entry.getValue()));
-            }
+        if (expData.containsKey("totalExpenditure")) {
+            BigDecimal exp = (BigDecimal) expData.get("totalExpenditure");
+            totalExpenditureLabel.setText(exp.toString() + " €");
         }
 
-        supplierChart.getData().clear();
-        supplierChart.getData().add(series);
+        updateSupplierCharts();
     }
 
-    private Node createSupplierPerformanceChart() {
-        CategoryAxis xAxis = new CategoryAxis();
-        xAxis.setLabel("Fournisseur");
-        NumberAxis yAxis = new NumberAxis();
-        yAxis.setLabel("Montant (€)");
+    private void updateSupplierCharts() {
+        if (supplierChart != null) {
+            XYChart.Series<String, Number> seriesVol = new XYChart.Series<>();
+            seriesVol.setName("Volume d'Achats (€)");
+            Map<String, Object> expData = reportService.getReportData("EXPENDITURE");
+            if (expData.containsKey("supplierBreakdown")) {
+                @SuppressWarnings("unchecked")
+                Map<String, BigDecimal> breakdown = (Map<String, BigDecimal>) expData.get("supplierBreakdown");
+                for (Map.Entry<String, BigDecimal> entry : breakdown.entrySet()) {
+                    seriesVol.getData().add(new XYChart.Data<>(entry.getKey(), entry.getValue()));
+                }
+            }
+            supplierChart.getData().setAll(seriesVol);
+        }
 
-        supplierChart = new BarChart<>(xAxis, yAxis);
-        supplierChart.setTitle("Volume d'Achats Fournisseurs");
+        if (performanceChart != null) {
+            XYChart.Series<String, Number> seriesPerf = new XYChart.Series<>();
+            seriesPerf.setName("Score de Performance (0-100)");
+            Map<String, Object> perfData = reportService.getReportData("PERFORMANCE");
+            if (perfData.containsKey("performanceBreakdown")) {
+                @SuppressWarnings("unchecked")
+                Map<String, Integer> breakdown = (Map<String, Integer>) perfData.get("performanceBreakdown");
+                for (Map.Entry<String, Integer> entry : breakdown.entrySet()) {
+                    seriesPerf.getData().add(new XYChart.Data<>(entry.getKey(), entry.getValue()));
+                }
+            }
+            performanceChart.getData().setAll(seriesPerf);
+        }
+    }
 
-        // Initial population
-        updateSupplierChart();
+    private Node createSupplierCharts() {
+        VBox charts = new VBox(20);
 
-        return supplierChart;
+        // Volume Chart
+        CategoryAxis vXAxis = new CategoryAxis();
+        vXAxis.setLabel("Fournisseur");
+        NumberAxis vYAxis = new NumberAxis();
+        vYAxis.setLabel("Montant (€)");
+        supplierChart = new BarChart<>(vXAxis, vYAxis);
+        supplierChart.setTitle("Volume d'Achats");
+        supplierChart.setPrefHeight(300);
+
+        // Performance Chart
+        CategoryAxis pXAxis = new CategoryAxis();
+        pXAxis.setLabel("Fournisseur");
+        NumberAxis pYAxis = new NumberAxis(0, 100, 10);
+        pYAxis.setLabel("Score");
+        performanceChart = new BarChart<>(pXAxis, pYAxis);
+        performanceChart.setTitle("Performance Fournisseurs (Score)");
+        performanceChart.setPrefHeight(300);
+
+        charts.getChildren().addAll(supplierChart, performanceChart);
+
+        // Initial load
+        updateSupplierCharts();
+
+        return charts;
     }
 
     public Parent getView() {

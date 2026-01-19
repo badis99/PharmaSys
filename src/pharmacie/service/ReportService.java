@@ -11,6 +11,7 @@ public class ReportService {
         strategies.put("STOCK", new StockReportStrategy());
         strategies.put("REVENUE", new RevenueReportStrategy());
         strategies.put("EXPENDITURE", new ExpenditureReportStrategy());
+        strategies.put("PERFORMANCE", new SupplierPerformanceStrategy());
     }
 
     public String generateReport(String type) {

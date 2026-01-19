@@ -68,7 +68,7 @@ public class MySQLVenteDAO extends AbstractMySQLDAO implements VenteDAO {
         ResultSetMetaData meta = rs.getMetaData();
         int columns = meta.getColumnCount();
         for (int i = 1; i <= columns; i++) {
-            if (colName.equals(meta.getColumnLabel(i)))
+            if (colName.equalsIgnoreCase(meta.getColumnLabel(i)))
                 return true;
         }
         return false;

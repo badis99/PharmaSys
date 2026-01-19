@@ -67,7 +67,7 @@ public class MySQLCommandeDAO extends AbstractMySQLDAO implements CommandeDAO {
         ResultSetMetaData meta = rs.getMetaData();
         int columns = meta.getColumnCount();
         for (int i = 1; i <= columns; i++) {
-            if (columnName.equals(meta.getColumnLabel(i))) {
+            if (columnName.equalsIgnoreCase(meta.getColumnLabel(i))) {
                 return true;
             }
         }
