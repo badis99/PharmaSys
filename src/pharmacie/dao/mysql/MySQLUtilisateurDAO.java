@@ -75,7 +75,7 @@ public class MySQLUtilisateurDAO extends AbstractMySQLDAO implements Utilisateur
                     }
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new RuntimeException("Erreur lors de l'ajout: " + e.getMessage());
             }
         } else {
             // Update
@@ -90,7 +90,7 @@ public class MySQLUtilisateurDAO extends AbstractMySQLDAO implements Utilisateur
                 stmt.setLong(6, entity.getId());
                 stmt.executeUpdate();
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new RuntimeException("Erreur lors de la mise à jour: " + e.getMessage());
             }
         }
     }
@@ -103,7 +103,7 @@ public class MySQLUtilisateurDAO extends AbstractMySQLDAO implements Utilisateur
             stmt.setLong(1, id);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Erreur lors de la suppression: " + e.getMessage());
         }
     }
 

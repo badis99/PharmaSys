@@ -162,7 +162,10 @@ public class ReportView {
                 cell -> new javafx.beans.property.SimpleStringProperty((String) cell.getValue().get("name")));
 
         TableColumn<Map<String, Object>, Integer> scoreCol = new TableColumn<>("Score Performance");
-        scoreCol.setCellValueFactory(new PropertyValueFactory<>("score"));
+        scoreCol.setCellValueFactory(cell -> {
+            Object val = cell.getValue().get("score");
+            return new javafx.beans.property.SimpleObjectProperty<>((Integer) val);
+        });
 
         TableColumn<Map<String, Object>, String> expCol = new TableColumn<>("Total Achats (€)");
         expCol.setCellValueFactory(

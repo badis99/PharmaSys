@@ -1,6 +1,5 @@
 package pharmacie.view;
 
-import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
@@ -11,14 +10,11 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import pharmacie.controller.ProductController;
 import pharmacie.model.Produit;
-import pharmacie.service.StockService;
 
-import java.util.List;
 import java.util.Optional;
 import java.math.BigDecimal;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
-import javafx.util.converter.NumberStringConverter;
 import javafx.scene.control.ButtonBar.ButtonData;
 
 public class ProductView {

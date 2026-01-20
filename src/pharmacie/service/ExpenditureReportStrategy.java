@@ -3,7 +3,6 @@ package pharmacie.service;
 import pharmacie.dao.interfaces.CommandeDAO;
 import pharmacie.dao.interfaces.DAOFactory;
 import pharmacie.model.Commande;
-import pharmacie.model.Fournisseur;
 
 import java.math.BigDecimal;
 import java.util.HashMap;

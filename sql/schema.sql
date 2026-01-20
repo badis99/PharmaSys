@@ -81,10 +81,10 @@ CREATE TABLE vente (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     date_vente TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     client_id BIGINT,
-    utilisateur_id BIGINT NOT NULL,
+    utilisateur_id BIGINT,
     total DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     FOREIGN KEY (client_id) REFERENCES client(id) ON DELETE SET NULL,
-    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE RESTRICT
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- Table: Ligne_Vente

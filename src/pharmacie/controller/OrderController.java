@@ -112,6 +112,14 @@ public class OrderController {
             c.setStatut(pharmacie.model.StatutCommande.RECUE);
             commandeDAO.save(c); // Update status in DB
 
+            // Update Supplier Performance Score
+            Fournisseur f = c.getFournisseur();
+            if (f != null) {
+                int currentNote = f.getNotePerformance();
+                f.setNotePerformance(Math.min(100, currentNote + 5));
+                fournisseurDAO.save(f);
+            }
+
             view.refreshTables();
             showAlert("Succès", "Commande réceptionnée. Stock mis à jour.");
 

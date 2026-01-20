@@ -17,9 +17,11 @@ public class UserManagementView {
     private BorderPane layout;
     private TableView<Utilisateur> table;
     private UserManagementController controller;
+    private Utilisateur currentUser;
 
-    public UserManagementView() {
-        this.controller = new UserManagementController(this);
+    public UserManagementView(Utilisateur currentUser) {
+        this.currentUser = currentUser;
+        this.controller = new UserManagementController(this, currentUser);
         createView();
         controller.loadData(table);
     }

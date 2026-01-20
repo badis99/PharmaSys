@@ -1,6 +1,5 @@
 package pharmacie.controller;
 
-import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import pharmacie.model.Utilisateur;
@@ -64,7 +63,7 @@ public class MainDashboardController {
             view.setCenterContent(new VBox(new Label("Accès refusé: Administrateur requis.")));
             return;
         }
-        UserManagementView userView = new UserManagementView();
+        UserManagementView userView = new UserManagementView(user);
         view.setCenterContent(userView.getView());
     }
 
