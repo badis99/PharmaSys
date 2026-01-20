@@ -4,13 +4,11 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableView;
+import pharmacie.dao.interfaces.ClientDAO;
 import pharmacie.dao.interfaces.DAOFactory;
 import pharmacie.dao.interfaces.ProduitDAO;
 import pharmacie.dao.interfaces.VenteDAO;
-import pharmacie.model.LigneVente;
-import pharmacie.model.Produit;
-import pharmacie.model.Utilisateur;
-import pharmacie.model.Vente;
+import pharmacie.model.*;
 import pharmacie.view.SaleView;
 
 import java.math.BigDecimal;
@@ -22,6 +20,7 @@ public class SaleController {
     private SaleView view;
     private ProduitDAO produitDAO;
     private VenteDAO venteDAO;
+    private ClientDAO clientDAO;
     private ObservableList<LigneVente> cartItems;
     private Utilisateur currentUser;
 
@@ -30,12 +29,26 @@ public class SaleController {
         this.currentUser = user;
         this.produitDAO = DAOFactory.getFactory(DAOFactory.Type.MYSQL).getProduitDAO();
         this.venteDAO = DAOFactory.getFactory(DAOFactory.Type.MYSQL).getVenteDAO();
+        this.clientDAO = DAOFactory.getFactory(DAOFactory.Type.MYSQL).getClientDAO();
         this.cartItems = FXCollections.observableArrayList();
     }
 
     public void loadProducts(TableView<Produit> table) {
         List<Produit> products = produitDAO.findAll();
         table.setItems(FXCollections.observableArrayList(products));
+    }
+
+    public void saveClient(Client c) {
+        clientDAO.save(c);
+    }
+
+    public List<Client> getAllClients() {
+        return clientDAO.findAll();
+    }
+
+    public void loadSalesHistory(TableView<Vente> table) {
+        List<Vente> sales = venteDAO.findAll();
+        table.setItems(FXCollections.observableArrayList(sales));
     }
 
     public ObservableList<LigneVente> getCartItems() {
@@ -72,7 +85,7 @@ public class SaleController {
         view.refreshCart();
     }
 
-    public void checkout() {
+    public void checkout(Client client) {
         if (cartItems.isEmpty()) {
             showAlert("Panier vide", "Ajoutez des produits avant de valider.");
             return;
@@ -81,6 +94,7 @@ public class SaleController {
         Vente vente = new Vente();
         vente.setDateVente(LocalDateTime.now());
         vente.setUtilisateur(currentUser);
+        vente.setClient(client);
         vente.setLignes(new ArrayList<>(cartItems));
         vente.calculerTotal();
 
@@ -91,13 +105,6 @@ public class SaleController {
 
         try {
             venteDAO.save(vente);
-
-            // Update stock manually if DAO doesn't do it triggers
-            for (LigneVente line : cartItems) {
-                Produit p = line.getProduit();
-                p.setStockActuel(p.getStockActuel() - line.getQuantite());
-                produitDAO.save(p); // Update product stock
-            }
 
             cartItems.clear();
             view.refreshCart();

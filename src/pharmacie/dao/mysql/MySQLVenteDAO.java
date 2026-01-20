@@ -133,7 +133,7 @@ public class MySQLVenteDAO extends AbstractMySQLDAO implements VenteDAO {
                 // Insert
                 String sql = "INSERT INTO vente (client_id, utilisateur_id, date_vente, total) VALUES (?, ?, ?, ?)";
                 try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                    if (entity.getClient() != null)
+                    if (entity.getClient() != null && entity.getClient().getId() != null)
                         stmt.setLong(1, entity.getClient().getId());
                     else
                         stmt.setNull(1, Types.BIGINT);
@@ -152,7 +152,7 @@ public class MySQLVenteDAO extends AbstractMySQLDAO implements VenteDAO {
                 // Update (rare for sales but possible)
                 String sql = "UPDATE vente SET client_id=?, utilisateur_id=?, date_vente=?, total=? WHERE id=?";
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                    if (entity.getClient() != null)
+                    if (entity.getClient() != null && entity.getClient().getId() != null)
                         stmt.setLong(1, entity.getClient().getId());
                     else
                         stmt.setNull(1, Types.BIGINT);
@@ -204,7 +204,7 @@ public class MySQLVenteDAO extends AbstractMySQLDAO implements VenteDAO {
                 } catch (SQLException ex) {
                     ex.printStackTrace();
                 }
-            e.printStackTrace();
+            throw new RuntimeException("Erreur lors de l'enregistrement de la vente: " + e.getMessage(), e);
         } finally {
             if (conn != null)
                 try {

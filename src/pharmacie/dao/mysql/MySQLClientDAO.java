@@ -61,16 +61,18 @@ public class MySQLClientDAO extends AbstractMySQLDAO implements ClientDAO {
                     PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setString(1, entity.getNom());
                 stmt.setString(2, entity.getPrenom());
-                stmt.setString(3, entity.getEmail());
-                stmt.setString(4, entity.getTelephone());
-                stmt.setString(5, entity.getCarteVitale());
+                stmt.setString(3, entity.getEmail() == null || entity.getEmail().isEmpty() ? null : entity.getEmail());
+                stmt.setString(4, entity.getTelephone() == null || entity.getTelephone().isEmpty() ? null
+                        : entity.getTelephone());
+                stmt.setString(5, entity.getCarteVitale() == null || entity.getCarteVitale().isEmpty() ? null
+                        : entity.getCarteVitale());
                 stmt.executeUpdate();
                 try (ResultSet gk = stmt.getGeneratedKeys()) {
                     if (gk.next())
                         entity.setId(gk.getLong(1));
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new RuntimeException("Erreur lors de l'enregistrement du client: " + e.getMessage(), e);
             }
         } else {
             String sql = "UPDATE client SET nom=?, prenom=?, email=?, telephone=?, carte_vitale=? WHERE id=?";
@@ -78,13 +80,15 @@ public class MySQLClientDAO extends AbstractMySQLDAO implements ClientDAO {
                     PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, entity.getNom());
                 stmt.setString(2, entity.getPrenom());
-                stmt.setString(3, entity.getEmail());
-                stmt.setString(4, entity.getTelephone());
-                stmt.setString(5, entity.getCarteVitale());
+                stmt.setString(3, entity.getEmail() == null || entity.getEmail().isEmpty() ? null : entity.getEmail());
+                stmt.setString(4, entity.getTelephone() == null || entity.getTelephone().isEmpty() ? null
+                        : entity.getTelephone());
+                stmt.setString(5, entity.getCarteVitale() == null || entity.getCarteVitale().isEmpty() ? null
+                        : entity.getCarteVitale());
                 stmt.setLong(6, entity.getId());
                 stmt.executeUpdate();
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new RuntimeException("Erreur lors de la mise à jour du client: " + e.getMessage(), e);
             }
         }
     }
