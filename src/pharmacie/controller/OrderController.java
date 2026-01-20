@@ -114,6 +114,16 @@ public class OrderController {
 
             view.refreshTables();
             showAlert("Succès", "Commande réceptionnée. Stock mis à jour.");
+
+            // Check for low stock alerts
+            List<Produit> lowStock = produitDAO.findLowStock();
+            if (!lowStock.isEmpty()) {
+                StringBuilder sb = new StringBuilder("Note : Les produits suivants restent sous le seuil minimal :\n");
+                for (Produit p : lowStock) {
+                    sb.append("- ").append(p.getNom()).append(" (Stock: ").append(p.getStockActuel()).append(")\n");
+                }
+                showAlert("Stock toujours Bas", sb.toString());
+            }
         } catch (Exception e) {
             e.printStackTrace();
             showAlert("Erreur", "Erreur lors de la réception.");
@@ -136,6 +146,17 @@ public class OrderController {
         } catch (Exception e) {
             e.printStackTrace();
             showAlert("Erreur", "Erreur lors de l'annulation.");
+        }
+    }
+
+    public void updateOrder(Commande c) {
+        try {
+            commandeDAO.save(c);
+            view.refreshTables();
+            showAlert("Succès", "Commande mise à jour.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Erreur", "Erreur lors de la mise à jour: " + e.getMessage());
         }
     }
 

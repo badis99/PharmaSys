@@ -1,7 +1,9 @@
 package pharmacie.dao.mysql;
 
 import pharmacie.dao.interfaces.FournisseurDAO;
+import pharmacie.exception.ValidationException;
 import pharmacie.model.Fournisseur;
+import pharmacie.util.ValidationUtils;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -55,6 +57,15 @@ public class MySQLFournisseurDAO extends AbstractMySQLDAO implements Fournisseur
 
     @Override
     public void save(Fournisseur entity) {
+        // 1. Validate phone format
+        ValidationUtils.validatePhone(entity.getTelephone());
+
+        // 2. Validate phone uniqueness across both client and fournisseur tables
+        if (!isPhoneUnique(entity.getTelephone(), entity.getId(), "fournisseur")) {
+            throw new ValidationException(
+                    "Ce numéro de téléphone est déjà utilisé par un autre client ou fournisseur.");
+        }
+
         if (entity.getId() == null) {
             String sql = "INSERT INTO fournisseur (nom, adresse, telephone, email, note_performance) VALUES (?, ?, ?, ?, ?)";
             try (Connection conn = getConnection();

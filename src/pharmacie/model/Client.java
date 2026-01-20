@@ -4,7 +4,6 @@ package pharmacie.model;
  * Represents a client of the pharmacy.
  */
 public class Client extends Personne {
-    private String telephone;
     private String carteVitale;
 
     public Client() {

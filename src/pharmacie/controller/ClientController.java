@@ -46,7 +46,7 @@ public class ClientController {
             showAlert("Succès", "Client ajouté.");
         } catch (Exception e) {
             e.printStackTrace();
-            showAlert("Erreur", "Erreur lors de l'ajout.");
+            showAlert("Erreur", "Erreur lors de l'ajout: " + e.getMessage());
         }
     }
 

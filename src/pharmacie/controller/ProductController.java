@@ -25,12 +25,22 @@ public class ProductController {
     public void addProduct(Produit p) {
         try {
             stockService.saveProduit(p);
-            // Refresh the table currently displayed in the view
             loadData(view.getTable());
             showAlert("Succès", "Produit ajouté avec succès !");
         } catch (Exception e) {
             e.printStackTrace();
             showAlert("Erreur", "Erreur lors de l'ajout du produit: " + e.getMessage());
+        }
+    }
+
+    public void updateProduct(Produit p) {
+        try {
+            stockService.saveProduit(p);
+            loadData(view.getTable());
+            showAlert("Succès", "Produit mis à jour avec succès !");
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Erreur", "Erreur lors de la mise à jour: " + e.getMessage());
         }
     }
 

@@ -9,6 +9,7 @@ public abstract class Personne {
     protected String nom;
     protected String prenom;
     protected String email;
+    protected String telephone;
 
     public Personne() {
     }
@@ -50,6 +51,14 @@ public abstract class Personne {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getTelephone() {
+        return telephone;
+    }
+
+    public void setTelephone(String telephone) {
+        this.telephone = telephone;
     }
 
     @Override

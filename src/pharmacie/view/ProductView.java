@@ -46,13 +46,22 @@ public class ProductView {
         Button addBtn = new Button("Ajouter Produit");
         addBtn.setOnAction(e -> showAddProductDialog());
 
+        Button editBtn = new Button("Modifier Produit");
+        editBtn.setOnAction(e -> {
+            Produit p = table.getSelectionModel().getSelectedItem();
+            if (p != null) {
+                showEditProductDialog(p);
+            }
+        });
+
         Button delBtn = new Button("Supprimer Produit");
+        delBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
         delBtn.setOnAction(e -> {
             Produit p = table.getSelectionModel().getSelectedItem();
             controller.deleteProduct(p);
         });
 
-        toolbar.getChildren().addAll(refreshBtn, addBtn, delBtn);
+        toolbar.getChildren().addAll(refreshBtn, addBtn, editBtn, delBtn);
         layout.setTop(toolbar);
 
         // Table
@@ -150,6 +159,77 @@ public class ProductView {
                 alert.setTitle("Erreur");
                 alert.setHeaderText("Données invalides");
                 alert.setContentText("Veuillez vérifier les champs.");
+                alert.showAndWait();
+            }
+        });
+    }
+
+    private void showEditProductDialog(Produit p) {
+        Dialog<Produit> dialog = new Dialog<>();
+        dialog.setTitle("Modifier Produit");
+        dialog.setHeaderText("Modifier les détails de " + p.getNom());
+
+        ButtonType saveButtonType = new ButtonType("Enregistrer", ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20));
+
+        TextField nom = new TextField(p.getNom());
+        TextField description = new TextField(p.getDescription());
+        TextField prixAchat = new TextField(p.getPrixAchat().toString());
+        TextField prixVente = new TextField(p.getPrixVente().toString());
+        TextField stock = new TextField(String.valueOf(p.getStockActuel()));
+        TextField seuil = new TextField(String.valueOf(p.getSeuilMin()));
+        TextField codeBarre = new TextField(p.getCodeBarre());
+
+        grid.add(new Label("Nom:"), 0, 0);
+        grid.add(nom, 1, 0);
+        grid.add(new Label("Description:"), 0, 1);
+        grid.add(description, 1, 1);
+        grid.add(new Label("Prix Achat:"), 0, 2);
+        grid.add(prixAchat, 1, 2);
+        grid.add(new Label("Prix Vente:"), 0, 3);
+        grid.add(prixVente, 1, 3);
+        grid.add(new Label("Stock:"), 0, 4);
+        grid.add(stock, 1, 4);
+        grid.add(new Label("Seuil Min:"), 0, 5);
+        grid.add(seuil, 1, 5);
+        grid.add(new Label("Code Barre:"), 0, 6);
+        grid.add(codeBarre, 1, 6);
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == saveButtonType) {
+                try {
+                    p.setNom(nom.getText());
+                    p.setDescription(description.getText());
+                    p.setPrixAchat(new BigDecimal(prixAchat.getText()));
+                    p.setPrixVente(new BigDecimal(prixVente.getText()));
+                    p.setStockActuel(Integer.parseInt(stock.getText()));
+                    p.setSeuilMin(Integer.parseInt(seuil.getText()));
+                    p.setCodeBarre(codeBarre.getText());
+                    return p;
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    return null;
+                }
+            }
+            return null;
+        });
+
+        Optional<Produit> result = dialog.showAndWait();
+        result.ifPresent(updatedProduct -> {
+            if (updatedProduct != null) {
+                controller.updateProduct(updatedProduct);
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Erreur");
+                alert.setHeaderText("Données invalides");
+                alert.setContentText("Veuillez vérifier les formats numériques.");
                 alert.showAndWait();
             }
         });

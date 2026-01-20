@@ -153,7 +153,21 @@ public class OrderView {
                 controller.cancelOrder(c);
         });
 
-        actions.getChildren().addAll(refreshBtn, receiveBtn, cancelBtn);
+        Button editBtn = new Button("Modifier");
+        editBtn.setStyle("-fx-background-color: #f0ad4e; -fx-text-fill: white;");
+        editBtn.setOnAction(e -> {
+            Commande c = historyTable.getSelectionModel().getSelectedItem();
+            if (c != null) {
+                if (c.getStatut() == pharmacie.model.StatutCommande.EN_ATTENTE) {
+                    showEditOrderDialog(c);
+                } else {
+                    new Alert(Alert.AlertType.WARNING, "Seules les commandes EN ATTENTE peuvent être modifiées.")
+                            .show();
+                }
+            }
+        });
+
+        actions.getChildren().addAll(refreshBtn, editBtn, receiveBtn, cancelBtn);
 
         historyTable = new TableView<>();
         setupHistoryTable();
@@ -273,6 +287,55 @@ public class OrderView {
 
     public void clearSelection() {
         supplierCombo.getSelectionModel().clearSelection();
+    }
+
+    private void showEditOrderDialog(Commande c) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Modifier la Commande #" + c.getId());
+        dialog.setHeaderText("Ajuster les quantités pour : " + c.getFournisseur().getNom());
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(10));
+        content.setPrefWidth(400);
+
+        TableView<LigneCommande> editTable = new TableView<>();
+        TableColumn<LigneCommande, String> pCol = new TableColumn<>("Produit");
+        pCol.setCellValueFactory(
+                cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getProduit().getNom()));
+        TableColumn<LigneCommande, Integer> qCol = new TableColumn<>("Quantité");
+        qCol.setCellValueFactory(new PropertyValueFactory<>("quantite"));
+        editTable.getColumns().addAll(pCol, qCol);
+        editTable.setItems(FXCollections.observableArrayList(c.getLignes()));
+
+        Button editQtyBtn = new Button("Changer Quantité");
+        editQtyBtn.setOnAction(e -> {
+            LigneCommande selected = editTable.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                TextInputDialog qtyDialog = new TextInputDialog(String.valueOf(selected.getQuantite()));
+                qtyDialog.setTitle("Quantité");
+                qtyDialog.setHeaderText("Produit: " + selected.getProduit().getNom());
+                Optional<String> res = qtyDialog.showAndWait();
+                res.ifPresent(s -> {
+                    try {
+                        int q = Integer.parseInt(s);
+                        if (q > 0) {
+                            selected.setQuantite(q);
+                            editTable.refresh();
+                        }
+                    } catch (NumberFormatException ex) {
+                    }
+                });
+            }
+        });
+
+        content.getChildren().addAll(new Label("Articles:"), editTable, editQtyBtn);
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Optional<ButtonType> result = dialog.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            controller.updateOrder(c);
+        }
     }
 
     public Parent getView() {

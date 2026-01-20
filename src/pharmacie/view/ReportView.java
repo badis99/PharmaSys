@@ -1,33 +1,27 @@
 package pharmacie.view;
 
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.chart.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.*;
 import pharmacie.model.Produit;
 import pharmacie.service.ReportService;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class ReportView {
     private BorderPane layout;
     private ReportService reportService;
-    private PieChart stockChart;
-    private BarChart<String, Number> supplierChart; // Volume
-    private BarChart<String, Number> performanceChart; // Scores
+    private TableView<Produit> stockTable;
+    private TableView<Map<String, Object>> supplierPerformanceTable;
     private Label totalRevenueLabel;
     private Label totalSalesLabel;
     private Label totalExpenditureLabel;
@@ -84,22 +78,21 @@ public class ReportView {
 
         kpiRow.getChildren().addAll(revCard, salesCard, expCard);
 
-        // 2. Charts Section (Grid)
-        GridPane chartsGrid = new GridPane();
-        chartsGrid.setHgap(25);
-        chartsGrid.setVgap(25);
+        // 2. Row Panels (Tables)
+        VBox rowPanels = new VBox(25);
 
-        // Stock Chart
-        stockChart = new PieChart();
-        stockChart.setTitle(null); // Clean
-        Node stockPane = createChartContainer("Répartition des Stocks", stockChart);
-        chartsGrid.add(stockPane, 0, 0);
+        // a. État des Stocks Table
+        stockTable = new TableView<>();
+        setupStockTable();
+        Node stockPane = createTableContainer("📊 État Détaillé des Stocks", stockTable);
 
-        // Supplier Charts
-        Node supplierCharts = createSupplierCharts();
-        chartsGrid.add(supplierCharts, 1, 0);
+        // b. Performance Fournisseurs Table
+        supplierPerformanceTable = new TableView<>();
+        setupSupplierPerformanceTable();
+        Node perfPane = createTableContainer("⭐ Performance et Dépenses par Fournisseur", supplierPerformanceTable);
 
-        content.getChildren().addAll(kpiRow, chartsGrid);
+        rowPanels.getChildren().addAll(stockPane, perfPane);
+        content.getChildren().addAll(kpiRow, rowPanels);
         scrollPane.setContent(content);
         layout.setCenter(scrollPane);
     }
@@ -122,7 +115,65 @@ public class ReportView {
         return card;
     }
 
-    private VBox createChartContainer(String title, Node chart) {
+    private void setupStockTable() {
+        TableColumn<Produit, String> nameCol = new TableColumn<>("Produit");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("nom"));
+
+        TableColumn<Produit, Integer> stockCol = new TableColumn<>("Stock Actuel");
+        stockCol.setCellValueFactory(new PropertyValueFactory<>("stockActuel"));
+
+        TableColumn<Produit, Integer> thresholdCol = new TableColumn<>("Seuil Min");
+        thresholdCol.setCellValueFactory(new PropertyValueFactory<>("seuilMin"));
+
+        TableColumn<Produit, String> statusCol = new TableColumn<>("Statut");
+        statusCol.setCellValueFactory(cell -> {
+            Produit p = cell.getValue();
+            String status = p.isStockLow() ? "CRITIQUE" : "NORMAL";
+            return new javafx.beans.property.SimpleStringProperty(status);
+        });
+
+        // Cell factory for coloring status
+        statusCol.setCellFactory(column -> new TableCell<Produit, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    if (item.equals("CRITIQUE")) {
+                        setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+                    } else {
+                        setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
+                    }
+                }
+            }
+        });
+
+        stockTable.getColumns().addAll(nameCol, stockCol, thresholdCol, statusCol);
+        stockTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        stockTable.setPrefHeight(250);
+    }
+
+    private void setupSupplierPerformanceTable() {
+        TableColumn<Map<String, Object>, String> nameCol = new TableColumn<>("Fournisseur");
+        nameCol.setCellValueFactory(
+                cell -> new javafx.beans.property.SimpleStringProperty((String) cell.getValue().get("name")));
+
+        TableColumn<Map<String, Object>, Integer> scoreCol = new TableColumn<>("Score Performance");
+        scoreCol.setCellValueFactory(new PropertyValueFactory<>("score"));
+
+        TableColumn<Map<String, Object>, String> expCol = new TableColumn<>("Total Achats (€)");
+        expCol.setCellValueFactory(
+                cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().get("total") + " €"));
+
+        supplierPerformanceTable.getColumns().addAll(nameCol, scoreCol, expCol);
+        supplierPerformanceTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        supplierPerformanceTable.setPrefHeight(250);
+    }
+
+    private VBox createTableContainer(String title, Node table) {
         VBox container = new VBox(10);
         container.setPadding(new Insets(20));
         container.setStyle("-fx-background-color: white; -fx-background-radius: 10; " +
@@ -131,117 +182,56 @@ public class ReportView {
         Label titleLbl = new Label(title);
         titleLbl.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #34495e;");
 
-        container.getChildren().addAll(titleLbl, chart);
-        VBox.setVgrow(chart, Priority.ALWAYS);
+        container.getChildren().addAll(titleLbl, table);
+        VBox.setVgrow(table, Priority.ALWAYS);
         return container;
     }
 
     public void refresh() {
-        // Stock Data
+        // 1. Stock Data
         Map<String, Object> stockData = reportService.getReportData("STOCK");
         if (stockData.get("produits") instanceof List) {
             @SuppressWarnings("unchecked")
             List<Produit> produits = (List<Produit>) stockData.get("produits");
-
-            int lowStock = 0;
-            int normalStock = 0;
-
-            for (Produit p : produits) {
-                if (p.isStockLow()) {
-                    lowStock++;
-                } else {
-                    normalStock++;
-                }
-            }
-
-            ObservableList<PieChart.Data> pieData = FXCollections.observableArrayList(
-                    new PieChart.Data("Stock Faible", lowStock),
-                    new PieChart.Data("Stock Normal", normalStock));
-            stockChart.setData(pieData);
+            stockTable.setItems(FXCollections.observableArrayList(produits));
         }
 
-        // Revenue Data
+        // 2. Revenue Data
         Map<String, Object> revenueData = reportService.getReportData("REVENUE");
         if (revenueData.containsKey("totalRevenue")) {
             BigDecimal rev = (BigDecimal) revenueData.get("totalRevenue");
-            totalRevenueLabel.setText(rev.toString() + " €");
+            totalRevenueLabel.setText(String.format("%.2f €", rev));
         }
         if (revenueData.containsKey("transactionCount")) {
             Integer count = (Integer) revenueData.get("transactionCount");
             totalSalesLabel.setText(count.toString());
         }
 
-        // Expenditure Data (for chart or cards if added)
+        // 3. Expenditure & Performance Data merged for table
         Map<String, Object> expData = reportService.getReportData("EXPENDITURE");
+        Map<String, Object> perfData = reportService.getReportData("PERFORMANCE");
+
         if (expData.containsKey("totalExpenditure")) {
-            BigDecimal exp = (BigDecimal) expData.get("totalExpenditure");
-            totalExpenditureLabel.setText(exp.toString() + " €");
+            BigDecimal totalExp = (BigDecimal) expData.get("totalExpenditure");
+            totalExpenditureLabel.setText(String.format("%.2f €", totalExp));
         }
 
-        updateSupplierCharts();
-    }
+        List<Map<String, Object>> combinedSupplierData = new ArrayList<>();
+        if (expData.containsKey("supplierBreakdown") && perfData.containsKey("performanceBreakdown")) {
+            @SuppressWarnings("unchecked")
+            Map<String, BigDecimal> expenditures = (Map<String, BigDecimal>) expData.get("supplierBreakdown");
+            @SuppressWarnings("unchecked")
+            Map<String, Integer> performances = (Map<String, Integer>) perfData.get("performanceBreakdown");
 
-    private void updateSupplierCharts() {
-        if (supplierChart != null) {
-            XYChart.Series<String, Number> seriesVol = new XYChart.Series<>();
-            seriesVol.setName("Volume d'Achats (€)");
-            Map<String, Object> expData = reportService.getReportData("EXPENDITURE");
-            if (expData.containsKey("supplierBreakdown")) {
-                @SuppressWarnings("unchecked")
-                Map<String, BigDecimal> breakdown = (Map<String, BigDecimal>) expData.get("supplierBreakdown");
-                for (Map.Entry<String, BigDecimal> entry : breakdown.entrySet()) {
-                    seriesVol.getData().add(new XYChart.Data<>(entry.getKey(), entry.getValue()));
-                }
+            for (String supplierName : expenditures.keySet()) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("name", supplierName);
+                row.put("total", expenditures.get(supplierName));
+                row.put("score", performances.getOrDefault(supplierName, 0));
+                combinedSupplierData.add(row);
             }
-            supplierChart.getData().setAll(seriesVol);
         }
-
-        if (performanceChart != null) {
-            XYChart.Series<String, Number> seriesPerf = new XYChart.Series<>();
-            seriesPerf.setName("Score de Performance (0-100)");
-            Map<String, Object> perfData = reportService.getReportData("PERFORMANCE");
-            if (perfData.containsKey("performanceBreakdown")) {
-                @SuppressWarnings("unchecked")
-                Map<String, Integer> breakdown = (Map<String, Integer>) perfData.get("performanceBreakdown");
-                for (Map.Entry<String, Integer> entry : breakdown.entrySet()) {
-                    seriesPerf.getData().add(new XYChart.Data<>(entry.getKey(), entry.getValue()));
-                }
-            }
-            performanceChart.getData().setAll(seriesPerf);
-        }
-    }
-
-    private Node createSupplierCharts() {
-        VBox charts = new VBox(25);
-
-        // Volume Chart
-        CategoryAxis vXAxis = new CategoryAxis();
-        vXAxis.setLabel("Nom du Fournisseur");
-        NumberAxis vYAxis = new NumberAxis();
-        vYAxis.setLabel("Achats (€)");
-
-        supplierChart = new BarChart<>(vXAxis, vYAxis);
-        supplierChart.setLegendVisible(false);
-        supplierChart.setPrefHeight(350);
-        Node volPane = createChartContainer("Dépenses par Fournisseur (€)", supplierChart);
-
-        // Performance Chart
-        CategoryAxis pXAxis = new CategoryAxis();
-        pXAxis.setLabel("Nom du Fournisseur");
-        NumberAxis pYAxis = new NumberAxis(0, 100, 10);
-        pYAxis.setLabel("Score (0-100)");
-
-        performanceChart = new BarChart<>(pXAxis, pYAxis);
-        performanceChart.setLegendVisible(false);
-        performanceChart.setPrefHeight(350);
-        Node perfPane = createChartContainer("Performance des Fournisseurs", performanceChart);
-
-        charts.getChildren().addAll(volPane, perfPane);
-
-        // Initial load
-        updateSupplierCharts();
-
-        return charts;
+        supplierPerformanceTable.setItems(FXCollections.observableArrayList(combinedSupplierData));
     }
 
     public Parent getView() {

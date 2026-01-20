@@ -1,7 +1,9 @@
 package pharmacie.dao.mysql;
 
 import pharmacie.dao.interfaces.ClientDAO;
+import pharmacie.exception.ValidationException;
 import pharmacie.model.Client;
+import pharmacie.util.ValidationUtils;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -55,6 +57,15 @@ public class MySQLClientDAO extends AbstractMySQLDAO implements ClientDAO {
 
     @Override
     public void save(Client entity) {
+        // 1. Validate phone format
+        ValidationUtils.validatePhone(entity.getTelephone());
+
+        // 2. Validate phone uniqueness across both client and fournisseur tables
+        if (!isPhoneUnique(entity.getTelephone(), entity.getId(), "client")) {
+            throw new ValidationException(
+                    "Ce numéro de téléphone est déjà utilisé par un autre client ou fournisseur.");
+        }
+
         if (entity.getId() == null) {
             String sql = "INSERT INTO client (nom, prenom, email, telephone, carte_vitale) VALUES (?, ?, ?, ?, ?)";
             try (Connection conn = getConnection();

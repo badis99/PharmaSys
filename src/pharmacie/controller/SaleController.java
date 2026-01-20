@@ -110,6 +110,17 @@ public class SaleController {
             view.refreshCart();
             view.refreshProductList(); // Reload stock in table
             showAlert("Succès", "Vente enregistrée avec succès !");
+
+            // Check for low stock alerts
+            List<Produit> lowStock = produitDAO.findLowStock();
+            if (!lowStock.isEmpty()) {
+                StringBuilder sb = new StringBuilder(
+                        "Attention ! Les produits suivants ont atteint le seuil minimal :\n");
+                for (Produit p : lowStock) {
+                    sb.append("- ").append(p.getNom()).append(" (Stock: ").append(p.getStockActuel()).append(")\n");
+                }
+                showAlert("Alerte Stock Bas", sb.toString());
+            }
         } catch (Exception e) {
             e.printStackTrace();
             showAlert("Erreur", "Erreur lors de l'enregistrement de la vente.");
