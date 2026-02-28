@@ -1,4 +1,4 @@
-# PharmacieApp - Système de Gestion de Pharmacie
+# PharmaSys - Système de Gestion de Pharmacie
 
 PharmacieApp est une application de bureau moderne conçue pour simplifier la gestion quotidienne d'une pharmacie. Elle offre une interface intuitive pour le suivi des stocks, la gestion des ventes, les relations fournisseurs et l'analyse financière.
 
